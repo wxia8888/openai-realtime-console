@@ -1,6 +1,6 @@
-# OpenAI Realtime Console
+# OpenAI Realtime Console (Spelling Tutor)
 
-This is an example application showing how to use the [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime) with [WebRTC](https://platform.openai.com/docs/guides/realtime-webrtc).
+This is a fork of OpenAI RealTime Console, an example application showing how to use the [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime) with [WebRTC](https://platform.openai.com/docs/guides/realtime-webrtc).
 
 ## Installation and usage
 
