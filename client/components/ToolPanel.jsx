@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const functionDescription = `
-Call this function when a user asks for a color palette.
+Call this function to display the word spelled by the user and provide feedback on accuracy.
 `;
 
 const sessionUpdate = {
@@ -10,26 +10,21 @@ const sessionUpdate = {
     tools: [
       {
         type: "function",
-        name: "display_color_palette",
+        name: "display_spelled_word",
         description: functionDescription,
         parameters: {
           type: "object",
-          strict: true,
           properties: {
-            theme: {
+            word: {
               type: "string",
-              description: "Description of the theme for the color scheme.",
+              description: "The word spelled by the user.",
             },
-            colors: {
-              type: "array",
-              description: "Array of five hex color codes based on the theme.",
-              items: {
-                type: "string",
-                description: "Hex color code",
-              },
+            correctWord: {
+              type: "string",
+              description: "The correct spelling of the word.",
             },
           },
-          required: ["theme", "colors"],
+          required: ["word", "correctWord"],
         },
       },
     ],
@@ -38,24 +33,19 @@ const sessionUpdate = {
 };
 
 function FunctionCallOutput({ functionCallOutput }) {
-  const { theme, colors } = JSON.parse(functionCallOutput.arguments);
-
-  const colorBoxes = colors.map((color) => (
-    <div
-      key={color}
-      className="w-full h-16 rounded-md flex items-center justify-center border border-gray-200"
-      style={{ backgroundColor: color }}
-    >
-      <p className="text-sm font-bold text-black bg-slate-100 rounded-md p-2 border border-black">
-        {color}
-      </p>
-    </div>
-  ));
+  const { word, correctWord } = JSON.parse(functionCallOutput.arguments);
+  const isCorrect = word.trim().toLowerCase() === correctWord.toLowerCase();
 
   return (
     <div className="flex flex-col gap-2">
-      <p>Theme: {theme}</p>
-      {colorBoxes}
+      <p>Spelled Word: <strong>{word}</strong></p>
+      <p>
+        {isCorrect ? (
+          <span className="text-green-600">Correct! Well done.</span>
+        ) : (
+          <span className="text-red-600">Incorrect. The correct spelling is "{correctWord}".</span>
+        )}
+      </p>
       <pre className="text-xs bg-gray-100 rounded-md p-2 overflow-x-auto">
         {JSON.stringify(functionCallOutput, null, 2)}
       </pre>
@@ -70,6 +60,8 @@ export default function ToolPanel({
 }) {
   const [functionAdded, setFunctionAdded] = useState(false);
   const [functionCallOutput, setFunctionCallOutput] = useState(null);
+  const [practicedWords, setPracticedWords] = useState([]);
+  const [showAllWords, setShowAllWords] = useState(false);
 
   useEffect(() => {
     if (!events || events.length === 0) return;
@@ -88,16 +80,17 @@ export default function ToolPanel({
       mostRecentEvent.response.output.forEach((output) => {
         if (
           output.type === "function_call" &&
-          output.name === "display_color_palette"
+          output.name === "display_spelled_word"
         ) {
+          const { correctWord } = JSON.parse(output.arguments);
           setFunctionCallOutput(output);
+          setPracticedWords(prevWords => [...prevWords, correctWord]);
           setTimeout(() => {
             sendClientEvent({
               type: "response.create",
               response: {
                 instructions: `
-                ask for feedback about the color palette - don't repeat 
-                the colors, just ask if they like the colors.
+                Provide feedback on the spelled word and encourage the user to spell another word.
               `,
               },
             });
@@ -117,15 +110,27 @@ export default function ToolPanel({
   return (
     <section className="h-full w-full flex flex-col gap-4">
       <div className="h-full bg-gray-50 rounded-md p-4">
-        <h2 className="text-lg font-bold">Color Palette Tool</h2>
+        <h2 className="text-lg font-bold">Spelling Tool</h2>
         {isSessionActive ? (
           functionCallOutput ? (
             <FunctionCallOutput functionCallOutput={functionCallOutput} />
           ) : (
-            <p>Ask for advice on a color palette...</p>
+            <p>Spell a word to see it displayed here...</p>
           )
         ) : (
-          <p>Start the session to use this tool...</p>
+          <div>
+            <p>Session ended. Here are the correct spellings you practiced:</p>
+            <button onClick={() => setShowAllWords(!showAllWords)} className="mt-2 p-2 bg-blue-500 text-white rounded-md">
+              {showAllWords ? "Hide Words" : "Show All Correct Spellings"}
+            </button>
+            {showAllWords && (
+              <ul className="mt-2">
+                {practicedWords.map((word, index) => (
+                  <li key={index}>{word}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
     </section>

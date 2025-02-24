@@ -12,6 +12,7 @@ export default function App() {
   const audioElement = useRef(null);
 
   async function startSession() {
+    console.log("Starting spelling tutor session...");
     // Get an ephemeral key from the Fastify server
     const tokenResponse = await fetch("/token");
     const data = await tokenResponse.json();
@@ -41,14 +42,19 @@ export default function App() {
 
     const baseUrl = "https://api.openai.com/v1/realtime";
     const model = "gpt-4o-realtime-preview-2024-12-17";
+    
+    console.log("Getting the response...");
     const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
       method: "POST",
       body: offer.sdp,
       headers: {
         Authorization: `Bearer ${EPHEMERAL_KEY}`,
         "Content-Type": "application/sdp",
+        
       },
     });
+    
+
 
     const answer = {
       type: "answer",
@@ -105,11 +111,17 @@ export default function App() {
           {
             type: "input_text",
             text: message,
+            /*
+            text: `Spell the word: "${message}".
+              If the user spells it wrong, give them a hint. 
+              If they spell it correctly, congratulate them and provide a new word.`,
+            */
           },
         ],
       },
     };
 
+    console.log("Sending the text message");
     sendClientEvent(event);
     sendClientEvent({ type: "response.create" });
   }
